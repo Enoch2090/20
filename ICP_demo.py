@@ -2,6 +2,7 @@ from typing import Text
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
+from dash.dependencies import Input, Output
 from flask import Flask, Response
 from threading import Thread
 from cam_inst import VideoCamera
@@ -32,7 +33,7 @@ def gen():
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 server = Flask(__name__)
 app = dash.Dash(
-    __name__, server=server)
+    __name__, server=server, external_stylesheets=external_stylesheets)
 
 
 @server.route('/video_feed')
@@ -40,10 +41,25 @@ def video_feed():
     return Response(gen(),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
+@app.callback(Output('live-update-text', 'children'),
+              [Input('interval-component', 'n_intervals')])
+def update_metrics(n):
+    text = vid.__str__()
+    style = {'padding': '5px', 'fontSize': '16px'}
+    return [html.Span(text, style=style)]
 
+
+app.title = '606.ICU'
 app.layout = html.Div([
     html.H1("Webcam Test"),
-    html.Img(src="/video_feed")
+    html.Img(src="/video_feed"),
+    html.Div([
+        html.Div(id='live-update-text'),
+        dcc.Interval(
+            id='interval-component',
+            interval=1*1000  # in milliseconds
+        )
+    ])
 ])
 
 if __name__ == '__main__':

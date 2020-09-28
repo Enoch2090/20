@@ -40,12 +40,16 @@ def disable_background(img, facial_landmarks, face_points=face_points):
     return img[max(y_, 0):min(y1_, height_), max(0, x_):min(x1_, width_)]
 
 
+def frame_preprocess(frame):
+    return cv2.blur(frame, (9, 9))
+
+
 def frame_postprocess(frame, method="MORPH"):
     if method == "MORPH":
         kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
         return cv2.morphologyEx(frame, cv2.MORPH_OPEN, kernel, iterations=1)
     elif method == "BLUR":
-        return cv2.blur(frame, (13, 1))
+        return cv2.blur(frame, (13, 13))
 
 
 class data_queue(object):
@@ -114,11 +118,19 @@ class VideoCamera(object):
     def __del__(self):
         self.video.release()
 
+    def __str__(self):
+        self.time = datetime.datetime.now()
+        self.brightness_detection()
+        return "%s\nMovement = %s, Faces = %s, Brightness = %s" % (
+            self.time.__str__().split(".")[0], self.found_movement, len(self.face_bounds), self.avr_brightness)
+
     def update_frame(self):
         success, frame = self.video.read()
         frame = cv2.resize(frame, (640, 480))
         if self.detect_counter == (self.fps-1):
             bw_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            if cam_settings.DO_PRE_PROCESS:
+                bw_frame = frame_preprocess(bw_frame)
             bkg_diff = self.bkg.apply(bw_frame)
             self.frame_queue.add_data(bkg_diff)
             curr_frame = self.frame_queue.get_mean()
@@ -130,7 +142,8 @@ class VideoCamera(object):
             for j in self.bounds[0]:
                 x, y, w, h = cv2.boundingRect(np.array(j))
                 s += w*h
-            if s > 2000:
+            if s > cam_settings.MOVE_THRESHOLD:
+                self.found_movement = True
                 self.get_face()
         if len(self.bounds) > 0:
             for j in self.bounds[0]:
@@ -142,8 +155,8 @@ class VideoCamera(object):
             for bound in self.face_bounds:
                 cv2.rectangle(frame, bound[0],
                               bound[1], (0, 153, 0), 5)
-        self.detect_counter = (self.detect_counter + 1) % self.fps
         self.frame = frame
+        self.detect_counter = (self.detect_counter + 1) % self.fps
         time.sleep(1/(self.fps//2))
         return
 
@@ -160,9 +173,6 @@ class VideoCamera(object):
     def get_face(self):
         #frame_faces_eq = cv2.equalizeHist(self.frame)
         frame_faces = detector(self.frame)
-        if self.dev_mode:
-            print("%s found %s faces." %
-                  (datetime.datetime.now(), frame_faces.__len__()))
         if frame_faces.__len__() != 0:
             face_bounds = []
             for face in frame_faces:
@@ -173,3 +183,9 @@ class VideoCamera(object):
         else:
             self.face_bounds = []
         return
+
+    def brightness_detection(self):
+        bw_frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
+        bw_shape = bw_frame.shape
+        self.avr_brightness = int(np.sum(bw_frame)/(bw_shape[0]*bw_shape[1]))
+        return self.avr_brightness
