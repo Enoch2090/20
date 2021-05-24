@@ -119,8 +119,10 @@ class VideoCamera(object):
     def __str__(self):
         self.time = datetime.datetime.now()
         self.brightness_detection()
-        return "%s\nMovement = %s, Faces = %s, Brightness = %s" % (
-            self.time.__str__().split(".")[0], self.found_movement, len(self.face_bounds), self.avr_brightness)
+#         return "%s\nMovement = %s, Faces = %s, Brightness = %s" % (
+#             self.time.__str__().split(".")[0], self.found_movement, len(self.face_bounds), self.avr_brightness)
+        return "%s\nMovement = %s, Brightness = %s" % (
+            self.time.__str__().split(".")[0], self.found_movement, self.avr_brightness)
 
     def update_frame(self):
         success, frame = self.video.read()
