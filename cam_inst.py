@@ -3,41 +3,39 @@ import cv2
 import time
 import datetime
 import numpy as np
-import dlib
+# import dlib
 import cam_settings
 
-detector = dlib.get_frontal_face_detector()
-predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
-face_points = [0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16,
-               26, 25, 24, 23, 22, 21, 20, 19,
-               18, 17]
+# detector = dlib.get_frontal_face_detector()
+# predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
+# face_points = [0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17]
 
 
-def get_face_region(facial_landmarks, face_points=face_points):
-    def g(i): return (facial_landmarks.part(
-        face_points[i]).x, facial_landmarks.part(face_points[i]).y)
-    face_region = np.array(list(map(g, np.arange(0, 27))))
-    x_, y_ = np.min(face_region[:, 0]), np.min(face_region[:, 1])
-    x1_, y1_ = np.max(face_region[:, 0]), np.max(face_region[:, 1])
-    return [(x_, y_), (x1_, y1_)]
+# def get_face_region(facial_landmarks, face_points=face_points):
+#     def g(i): return (facial_landmarks.part(
+#         face_points[i]).x, facial_landmarks.part(face_points[i]).y)
+#     face_region = np.array(list(map(g, np.arange(0, 27))))
+#     x_, y_ = np.min(face_region[:, 0]), np.min(face_region[:, 1])
+#     x1_, y1_ = np.max(face_region[:, 0]), np.max(face_region[:, 1])
+#     return [(x_, y_), (x1_, y1_)]
 
 
-def disable_background(img, facial_landmarks, face_points=face_points):
-    def g(i): return (facial_landmarks.part(
-        face_points[i]).x, facial_landmarks.part(face_points[i]).y)
-    face_region = np.array(list(map(g, np.arange(0, 27))))
-    np.max(face_region[:, 0])
-    height_, width_ = img.shape
-    mask = np.zeros((height_, width_), np.uint8)
-    cv2.polylines(mask, [face_region], True, 255, 2)
-    cv2.fillPoly(mask, [face_region], 255)
-    img = cv2.bitwise_and(img, img, mask=mask)
-    avr = cv2.mean(img, mask=mask)[0]
-    avg_back = (255-mask)/255*avr
-    img = img+avg_back
-    x_, y_ = np.min(face_region[:, 0]), np.min(face_region[:, 1])
-    x1_, y1_ = np.max(face_region[:, 0]), np.max(face_region[:, 1])
-    return img[max(y_, 0):min(y1_, height_), max(0, x_):min(x1_, width_)]
+# def disable_background(img, facial_landmarks, face_points=face_points):
+#     def g(i): return (facial_landmarks.part(
+#         face_points[i]).x, facial_landmarks.part(face_points[i]).y)
+#     face_region = np.array(list(map(g, np.arange(0, 27))))
+#     np.max(face_region[:, 0])
+#     height_, width_ = img.shape
+#     mask = np.zeros((height_, width_), np.uint8)
+#     cv2.polylines(mask, [face_region], True, 255, 2)
+#     cv2.fillPoly(mask, [face_region], 255)
+#     img = cv2.bitwise_and(img, img, mask=mask)
+#     avr = cv2.mean(img, mask=mask)[0]
+#     avg_back = (255-mask)/255*avr
+#     img = img+avg_back
+#     x_, y_ = np.min(face_region[:, 0]), np.min(face_region[:, 1])
+#     x1_, y1_ = np.max(face_region[:, 0]), np.max(face_region[:, 1])
+#     return img[max(y_, 0):min(y1_, height_), max(0, x_):min(x1_, width_)]
 
 
 def frame_preprocess(frame):
@@ -144,7 +142,7 @@ class VideoCamera(object):
                 s += w*h
             if s > cam_settings.MOVE_THRESHOLD:
                 self.found_movement = True
-                self.get_face()
+                # self.get_face()
         if len(self.bounds) > 0:
             for j in self.bounds[0]:
                 x, y, w, h = cv2.boundingRect(np.array(j))
@@ -170,19 +168,19 @@ class VideoCamera(object):
     def get_flag(self):
         return self.found_movement
 
-    def get_face(self):
-        #frame_faces_eq = cv2.equalizeHist(self.frame)
-        frame_faces = detector(self.frame)
-        if frame_faces.__len__() != 0:
-            face_bounds = []
-            for face in frame_faces:
-                landmarks = predictor(self.frame, face)
-                face_loc = get_face_region(landmarks)
-                face_bounds.append(face_loc)
-            self.face_bounds = face_bounds
-        else:
-            self.face_bounds = []
-        return
+    # def get_face(self):
+    #     #frame_faces_eq = cv2.equalizeHist(self.frame)
+    #     frame_faces = detector(self.frame)
+    #     if frame_faces.__len__() != 0:
+    #         face_bounds = []
+    #         for face in frame_faces:
+    #             landmarks = predictor(self.frame, face)
+    #             face_loc = get_face_region(landmarks)
+    #             face_bounds.append(face_loc)
+    #         self.face_bounds = face_bounds
+    #     else:
+    #         self.face_bounds = []
+    #     return
 
     def brightness_detection(self):
         bw_frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
